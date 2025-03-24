@@ -33,7 +33,7 @@ def plot_wavefunction(L:int,t:float,phi_wave:np.ndarray)->None:
     plt.show()
 
 if __name__ == "__main__":
-    time = [1.0,10.0,20.0,50.0]
+    time = [90.0]
     L=200
     phi0 = np.zeros(L, dtype=complex)
     phi0[100] = 1.0
