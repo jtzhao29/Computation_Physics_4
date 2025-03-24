@@ -27,20 +27,6 @@ def runge_kutta_4(f, phi0: np.ndarray[float], x0: float, xf: float, dx: float, e
     return trajectory
 
 
-def interative(E0: float, E1: float, L: float, max_iter: int, dx: float, phi0: np.ndarray, tolerate: float):
-    x0 = 0
-    xf = L
-    for i in range(max_iter):
-        phi_E0 = runge_kutta_4(func, phi0, x0, xf, dx, E0)[-1, 1]  # 获取 psi(L)
-        phi_E1 = runge_kutta_4(func, phi0, x0, xf, dx, E1)[-1, 1]  # 获取 psi(L)
-        
-        if abs(phi_E1) < tolerate:  
-            return E1, runge_kutta_4(func, phi0, x0, xf, dx, E1)
-        
-        E_new = E1 - phi_E1 * (E1 - E0) / (phi_E1 - phi_E0)
-        E0, E1 = E1, E_new
-
-    raise ValueError("111")
 
 def normalize_wavefunction(trajectory):
     x_vals = trajectory[:, 0]
@@ -48,19 +34,32 @@ def normalize_wavefunction(trajectory):
     norm = np.sqrt(np.trapz(psi_vals**2, x_vals))
     return psi_vals / norm  # 返回归一化的波函数
 
+def fff(E:float,L:float,dx:float,phi0:np.ndarray)->float:
+    X01 = -L
+    X02 = L
+    xf =0.0
+    trajectory1 = runge_kutta_4(func, phi0, X01, xf, dx, E)
+    trajectory2 = runge_kutta_4(func, phi0, X02, xf, -dx, E)
+    return (trajectory1[-1, 1] - trajectory2[-1, 1])**2 + (trajectory1[-1, 2] - trajectory2[-1, 2])**2
+
+def interative(E0: float, E1: float, L: float, max_iter: int, dx: float, phi0: np.ndarray, tolerate: float)->float:
+    E_new = E1-fff(E1,L,dx,phi0)*(E1-E0)/(fff(E1,L,dx,phi0)-fff(E0,L,dx,phi0))
+    for i in range(max_iter):
+        if abs(fff(E_new,L,dx,phi0)) < tolerate:
+            return E_new
+        E0,E1 = E1,E_new
+        E_new = E1-fff(E1,L,dx,phi0)*(E1-E0)/(fff(E1,L,dx,phi0)-fff(E0,L,dx,phi0))
+    raise ValueError("111")
+
 if __name__ == "__main__":
-    # 基态，设x=0处波函数为1，导数为0
-    phi0 = np.array([1.0,0.0])
-    E0 = 0
-    E1 = 0.2
+    # 设+-L处波函数为0，导数为0
+    phi0 = np.array([0.0,0.0])
+    E0 = 0.0
+    E1 = 1.0
     L = 90
     max_iter = 100
     dx = 0.01
     tolerate = 1e-6
-    E, trajectory = interative(E0, E1, L, max_iter, dx, phi0, tolerate)
-    psi = normalize_wavefunction(trajectory)
-    print(f"ground state energy:{E}")
-    print(f"param of normal:{np.trapz(psi**2, trajectory[:, 0])}")
-
-    print("trajectory:")
-    print(trajectory[500:])
+    E = interative(E0, E1, L, max_iter, dx, phi0, tolerate)
+    print(E)
+    
